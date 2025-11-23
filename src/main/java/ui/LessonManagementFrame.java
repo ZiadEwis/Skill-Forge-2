@@ -10,7 +10,6 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class LessonManagementFrame extends BaseFrame {
     private final String courseId;
@@ -48,8 +47,11 @@ public class LessonManagementFrame extends BaseFrame {
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
 
         lessonsModel = new DefaultTableModel(
-                new String[]{"Lesson ID", "Title", "Has Quiz", "Questions"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+                new String[] { "Lesson ID", "Title", "Has Quiz", "Questions" }, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         lessonsTable = new JTable(lessonsModel);
         lessonsTable.setFont(REGULAR_FONT);
@@ -84,7 +86,7 @@ public class LessonManagementFrame extends BaseFrame {
         for (Lesson l : course.getLessons()) {
             boolean hasQuiz = l.hasQuiz();
             int qCount = hasQuiz ? l.getQuiz().getQuestionCount() : 0;
-            lessonsModel.addRow(new Object[]{
+            lessonsModel.addRow(new Object[] {
                     l.getLessonId(), l.getTitle(), hasQuiz ? "Yes" : "No", qCount
             });
         }

@@ -19,6 +19,7 @@ public class QuizManagementFrame extends BaseFrame {
     private JTable questionsTable;
     private DefaultTableModel questionsModel;
     private JSpinner passingScoreSpinner;
+    private JSpinner maxAttemptsSpinner; // New field
 
     public QuizManagementFrame(String courseId, String lessonId) {
         super("Quiz Management");
@@ -42,20 +43,35 @@ public class QuizManagementFrame extends BaseFrame {
         titleLbl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         header.add(titleLbl, BorderLayout.WEST);
 
-        JPanel scorePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel settingsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        // Passing Score Spinner
         JLabel scoreLbl = new JLabel("Passing Score (%): ");
-        scorePanel.add(scoreLbl);
+        settingsPanel.add(scoreLbl);
 
         int currentScore = lesson.getQuiz() != null ? lesson.getQuiz().getPassingScore() : 50;
         passingScoreSpinner = new JSpinner(new SpinnerNumberModel(currentScore, 0, 100, 5));
-        passingScoreSpinner.addChangeListener(e -> updatePassingScore());
-        scorePanel.add(passingScoreSpinner);
+        passingScoreSpinner.addChangeListener(e -> updateQuizSettings());
+        settingsPanel.add(passingScoreSpinner);
+
+        settingsPanel.add(Box.createHorizontalStrut(15));
+
+        // Max Attempts Spinner (NEW)
+        JLabel attemptsLbl = new JLabel("Max Attempts: ");
+        settingsPanel.add(attemptsLbl);
+
+        int currentAttempts = lesson.getQuiz() != null ? lesson.getQuiz().getMaxAttempts() : 3;
+        maxAttemptsSpinner = new JSpinner(new SpinnerNumberModel(currentAttempts, 1, 10, 1));
+        maxAttemptsSpinner.addChangeListener(e -> updateQuizSettings());
+        settingsPanel.add(maxAttemptsSpinner);
+
+        settingsPanel.add(Box.createHorizontalStrut(10));
 
         JButton backBtn = createStyledButton("Close", null);
         backBtn.addActionListener(e -> dispose());
-        scorePanel.add(backBtn);
-        header.add(scorePanel, BorderLayout.EAST);
+        settingsPanel.add(backBtn);
 
+        header.add(settingsPanel, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
 
         JPanel tablePanel = new JPanel(new BorderLayout());
@@ -104,13 +120,14 @@ public class QuizManagementFrame extends BaseFrame {
         }
     }
 
-    private void updatePassingScore() {
+    private void updateQuizSettings() {
         if (lesson.getQuiz() == null) {
             Quiz quiz = new Quiz(IdGenerator.generateQuizId(), new ArrayList<>(),
-                    (int) passingScoreSpinner.getValue());
+                    (int) passingScoreSpinner.getValue(), (int) maxAttemptsSpinner.getValue());
             lesson.setQuiz(quiz);
         } else {
             lesson.getQuiz().setPassingScore((int) passingScoreSpinner.getValue());
+            lesson.getQuiz().setMaxAttempts((int) maxAttemptsSpinner.getValue());
         }
         db.updateCourse(course);
     }
@@ -122,7 +139,7 @@ public class QuizManagementFrame extends BaseFrame {
         if (dialog.isConfirmed()) {
             if (lesson.getQuiz() == null) {
                 Quiz quiz = new Quiz(IdGenerator.generateQuizId(), new ArrayList<>(),
-                        (int) passingScoreSpinner.getValue());
+                        (int) passingScoreSpinner.getValue(), (int) maxAttemptsSpinner.getValue());
                 lesson.setQuiz(quiz);
             }
             lesson.getQuiz().addQuestion(dialog.getQuestion());

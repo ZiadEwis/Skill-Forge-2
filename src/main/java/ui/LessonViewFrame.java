@@ -19,6 +19,7 @@ public class LessonViewFrame extends BaseFrame {
     private JTextArea contentArea;
     private JPanel resourcesPanel;
     private JButton takeQuizBtn, completeBtn;
+    private JLabel quizInfoLabel; // New label to show attempts
 
     public LessonViewFrame(String courseId) {
         super("Course Lessons");
@@ -93,6 +94,11 @@ public class LessonViewFrame extends BaseFrame {
         completeBtn.setEnabled(false);
         btnPanel.add(completeBtn);
 
+        // New label to display quiz attempts info
+        quizInfoLabel = new JLabel("");
+        quizInfoLabel.setFont(new Font("Dialog", Font.ITALIC, 11));
+        btnPanel.add(quizInfoLabel);
+
         bottomPanel.add(btnPanel, BorderLayout.SOUTH);
         rightPanel.add(bottomPanel, BorderLayout.SOUTH);
 
@@ -132,13 +138,64 @@ public class LessonViewFrame extends BaseFrame {
         Student student = (Student) auth.getCurrentUser();
         boolean completed = student.hasCompletedLesson(courseId, lesson.getLessonId());
 
-        takeQuizBtn.setEnabled(lesson.hasQuiz() && !completed);
+        // Update quiz button and info label
+        if (lesson.hasQuiz()) {
+            Quiz quiz = lesson.getQuiz();
+            int attemptCount = student.getQuizAttemptCount(courseId, lesson.getLessonId());
+            int maxAttempts = quiz.getMaxAttempts();
+            boolean hasPassedQuiz = student.hasPassedQuiz(courseId, lesson.getLessonId());
+
+            // Show attempts info
+            if (hasPassedQuiz) {
+                quizInfoLabel.setText("Quiz Passed! ✓");
+                quizInfoLabel.setForeground(new Color(0, 128, 0));
+                takeQuizBtn.setEnabled(false);
+            } else if (attemptCount >= maxAttempts) {
+                quizInfoLabel.setText("No attempts remaining (" + attemptCount + "/" + maxAttempts + ")");
+                quizInfoLabel.setForeground(Color.RED);
+                takeQuizBtn.setEnabled(false);
+            } else {
+                quizInfoLabel.setText("Attempts: " + attemptCount + "/" + maxAttempts);
+                quizInfoLabel.setForeground(new Color(100, 100, 100));
+                takeQuizBtn.setEnabled(true);
+            }
+        } else {
+            quizInfoLabel.setText("");
+            takeQuizBtn.setEnabled(false);
+        }
+
         completeBtn.setEnabled(!completed && !lesson.hasQuiz());
     }
 
     private void takeQuiz() {
         Lesson lesson = lessonList.getSelectedValue();
         if (lesson == null || !lesson.hasQuiz()) return;
+
+        Student student = (Student) auth.getCurrentUser();
+        Quiz quiz = lesson.getQuiz();
+        int attemptCount = student.getQuizAttemptCount(courseId, lesson.getLessonId());
+        int maxAttempts = quiz.getMaxAttempts();
+
+        // Check if student has passed
+        if (student.hasPassedQuiz(courseId, lesson.getLessonId())) {
+            showError("You have already passed this quiz!");
+            return;
+        }
+
+        // Check attempt limit
+        if (attemptCount >= maxAttempts) {
+            showError("You have reached the maximum number of attempts (" + maxAttempts + ") for this quiz.");
+            return;
+        }
+
+        // Show remaining attempts warning
+        int remainingAttempts = maxAttempts - attemptCount;
+        if (remainingAttempts <= 2) {
+            String warning = "You have " + remainingAttempts + " attempt(s) remaining. Continue?";
+            if (!showConfirm(warning)) {
+                return;
+            }
+        }
 
         QuizFrame quizFrame = new QuizFrame(course, lesson);
         quizFrame.setVisible(true);
